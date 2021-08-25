@@ -11,7 +11,7 @@
 
 #import <React/RCTBridge.h>
 #import <React/RCTEventDispatcher.h>
-#import <React/RCTImageLoader.h>
+#import <React/RCTImageLoaderProtocol.h>
 #import <React/RCTUtils.h>
 #import <React/UIView+React.h>
 
@@ -155,6 +155,7 @@ NSInteger const AIR_CALLOUT_OPEN_ZINDEX_BASELINE = 999;
     MKAnnotationView *annotationView = [self getAnnotationView];
 
     [self setSelected:YES animated:NO];
+    [self.map selectAnnotation:self animated:NO];
 
     id event = @{
             @"action": @"marker-select",
@@ -207,7 +208,7 @@ NSInteger const AIR_CALLOUT_OPEN_ZINDEX_BASELINE = 999;
         CGPoint touchPoint = [recognizer locationInView:marker.map.calloutView];
         CGRect bubbleFrame = [self.calloutView convertRect:marker.map.calloutView.bounds toView:marker.map];
         CGPoint touchPointReal = [recognizer locationInView:self.calloutView];
-        
+
         UIView *calloutView = [marker.map.calloutView hitTest:touchPoint withEvent:nil];
         if (calloutView) {
             // the callout (or its subview) got clicked, not the marker
@@ -269,6 +270,7 @@ NSInteger const AIR_CALLOUT_OPEN_ZINDEX_BASELINE = 999;
     [self.map.calloutView dismissCalloutAnimated:YES];
 
     [self setSelected:NO animated:NO];
+    [self.map deselectAnnotation:self animated:NO];
 
     id event = @{
             @"action": @"marker-deselect",
@@ -312,7 +314,7 @@ NSInteger const AIR_CALLOUT_OPEN_ZINDEX_BASELINE = 999;
         _reloadImageCancellationBlock();
         _reloadImageCancellationBlock = nil;
     }
-    _reloadImageCancellationBlock = [_bridge.imageLoader loadImageWithURLRequest:[RCTConvert NSURLRequest:_imageSrc]
+    _reloadImageCancellationBlock = [[_bridge moduleForName:@"ImageLoader"] loadImageWithURLRequest:[RCTConvert NSURLRequest:_imageSrc]
                                                                             size:self.bounds.size
                                                                            scale:RCTScreenScale()
                                                                          clipped:YES
@@ -344,6 +346,10 @@ NSInteger const AIR_CALLOUT_OPEN_ZINDEX_BASELINE = 999;
     _zIndexBeforeOpen = zIndex;
     _zIndex = _calloutIsOpen ? zIndex + AIR_CALLOUT_OPEN_ZINDEX_BASELINE : zIndex;
     self.layer.zPosition = zIndex;
+}
+
+- (BOOL)isSelected {
+  return _isPreselected || [super isSelected];
 }
 
 - (void)dealloc {
